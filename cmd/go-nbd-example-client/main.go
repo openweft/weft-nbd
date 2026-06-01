@@ -8,7 +8,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/pojntfx/go-nbd/pkg/client"
+	"github.com/openweft/weft-nbd/pkg/client"
 )
 
 func main() {

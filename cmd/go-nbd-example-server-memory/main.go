@@ -5,9 +5,9 @@ import (
 	"log"
 	"net"
 
-	"github.com/pojntfx/go-nbd/pkg/backend"
-	"github.com/pojntfx/go-nbd/pkg/client"
-	"github.com/pojntfx/go-nbd/pkg/server"
+	"github.com/openweft/weft-nbd/pkg/backend"
+	"github.com/openweft/weft-nbd/pkg/client"
+	"github.com/openweft/weft-nbd/pkg/server"
 )
 
 func main() {

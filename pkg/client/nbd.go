@@ -14,9 +14,9 @@ import (
 	"time"
 
 	"github.com/pilebones/go-udev/netlink"
-	"github.com/pojntfx/go-nbd/pkg/ioctl"
-	"github.com/pojntfx/go-nbd/pkg/protocol"
-	"github.com/pojntfx/go-nbd/pkg/server"
+	"github.com/openweft/weft-nbd/pkg/ioctl"
+	"github.com/openweft/weft-nbd/pkg/protocol"
+	"github.com/openweft/weft-nbd/pkg/server"
 )
 
 const (

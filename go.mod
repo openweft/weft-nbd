@@ -1,4 +1,4 @@
-module github.com/pojntfx/go-nbd
+module github.com/openweft/weft-nbd
 
 go 1.20
 
