@@ -27,6 +27,42 @@ type Export struct {
 	Backend backend.Backend
 }
 
+// TrimmableBackend is an optional interface a backend.Backend may implement to
+// support NBD_CMD_TRIM (discard/unmap). When an export's Backend satisfies this
+// interface the server advertises NBD_FLAG_SEND_TRIM and dispatches TRIM
+// requests to UnmapAt; otherwise TRIM is advertised as unsupported and treated
+// as a no-op if a client sends it anyway. Backends that do not implement it
+// remain fully backward compatible.
+type TrimmableBackend interface {
+	backend.Backend
+
+	// UnmapAt discards (unmaps) length bytes starting at off. It returns the
+	// number of bytes unmapped, mirroring the io.WriterAt convention.
+	UnmapAt(length uint32, off int64) (int, error)
+}
+
+// exportTransmissionFlags computes the NBD transmission flags advertised for an
+// export during the handshake. Every backend implements Sync, so SEND_FLUSH is
+// always set; READ_ONLY is set when the server is configured read-only; and
+// SEND_TRIM is set only when the export's Backend implements TrimmableBackend.
+func exportTransmissionFlags(export *Export, options *Options) uint16 {
+	flags := protocol.NEGOTIATION_REPLY_FLAGS_HAS_FLAGS | protocol.TRANSMISSION_FLAG_SEND_FLUSH
+
+	if options.SupportsMultiConn {
+		flags |= protocol.NEGOTIATION_REPLY_FLAGS_CAN_MULTI_CONN
+	}
+
+	if options.ReadOnly {
+		flags |= protocol.TRANSMISSION_FLAG_READ_ONLY
+	}
+
+	if _, ok := export.Backend.(TrimmableBackend); ok {
+		flags |= protocol.TRANSMISSION_FLAG_SEND_TRIM
+	}
+
+	return flags
+}
+
 type Options struct {
 	ReadOnly bool
 
@@ -146,10 +182,7 @@ n:
 			}
 
 			{
-				transmissionFlags := uint16(0)
-				if options.SupportsMultiConn {
-					transmissionFlags = protocol.NEGOTIATION_REPLY_FLAGS_HAS_FLAGS | protocol.NEGOTIATION_REPLY_FLAGS_CAN_MULTI_CONN
-				}
+				transmissionFlags := exportTransmissionFlags(export, options)
 
 				info := &bytes.Buffer{}
 				if err := binary.Write(info, binary.BigEndian, protocol.NegotiationReplyInfo{
@@ -393,6 +426,33 @@ n:
 
 			if _, err := export.Backend.WriteAt(b[:n], int64(requestHeader.Offset)); err != nil {
 				return err
+			}
+
+			if err := binary.Write(conn, binary.BigEndian, protocol.TransmissionReplyHeader{
+				ReplyMagic: protocol.TRANSMISSION_MAGIC_REPLY,
+				Error:      0,
+				Handle:     requestHeader.Handle,
+			}); err != nil {
+				return err
+			}
+		case protocol.TRANSMISSION_TYPE_REQUEST_FLUSH:
+			replyError := uint32(0)
+			if err := export.Backend.Sync(); err != nil {
+				replyError = protocol.TRANSMISSION_ERROR_EIO
+			}
+
+			if err := binary.Write(conn, binary.BigEndian, protocol.TransmissionReplyHeader{
+				ReplyMagic: protocol.TRANSMISSION_MAGIC_REPLY,
+				Error:      replyError,
+				Handle:     requestHeader.Handle,
+			}); err != nil {
+				return err
+			}
+		case protocol.TRANSMISSION_TYPE_REQUEST_TRIM:
+			if trimmable, ok := export.Backend.(TrimmableBackend); ok {
+				if _, err := trimmable.UnmapAt(requestHeader.Length, int64(requestHeader.Offset)); err != nil {
+					return err
+				}
 			}
 
 			if err := binary.Write(conn, binary.BigEndian, protocol.TransmissionReplyHeader{
