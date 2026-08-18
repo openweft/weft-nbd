@@ -17,7 +17,12 @@ jobs:
         target:
           - id: test
             src: .
-            os: golang:bullseye
+            # bullseye ships go1.24.6, below the 1.26.4 floor this module now
+            # declares, so the build fails before it compiles anything. bookworm
+            # ships go1.26.6. trixie ships the same Go; bookworm is kept for the
+            # older glibc, so the binaries this produces still run on the older
+            # targets an NBD server is likely to be deployed onto.
+            os: golang:bookworm
             flags: ""
             cmd: go test ./...
             dst: out/*
