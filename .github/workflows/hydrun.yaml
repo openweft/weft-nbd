@@ -36,9 +36,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
       - name: Set up hydrun
         run: |
           curl -L -o /tmp/hydrun "https://github.com/pojntfx/hydrun/releases/latest/download/hydrun.linux-$(uname -m)"
@@ -47,7 +47,7 @@ jobs:
         working-directory: ${{ matrix.target.src }}
         run: hydrun -o ${{ matrix.target.os }} ${{ matrix.target.flags }} "${{ matrix.target.cmd }}"
       - name: Fix permissions for output
-        run: sudo chown -R $USER .
+        run: sudo chown -R "$USER" .
       - name: Upload output
         uses: actions/upload-artifact@v7
         with:
@@ -67,21 +67,25 @@ jobs:
           path: /tmp/out
       - name: Extract branch name
         id: extract_branch
-        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        # set-output is deprecated and warns on every run; environment files
+        # are the supported way to pass a step output.
+        run: echo "branch=${GITHUB_REF#refs/heads/}" >> "$GITHUB_OUTPUT"
       - name: Publish pre-release to GitHub releases
         if: ${{ github.ref == 'refs/heads/main' }}
-        uses: marvinpinto/action-automatic-releases@latest
+        # marvinpinto/action-automatic-releases is archived upstream, and was
+        # pinned to the floating @latest tag besides.
+        uses: softprops/action-gh-release@v2
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: release-${{ steps.extract_branch.outputs.branch }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: release-${{ steps.extract_branch.outputs.branch }}
           prerelease: true
           files: |
             /tmp/out/*/*
       - name: Publish release to GitHub releases
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: marvinpinto/action-automatic-releases@latest
+        uses: softprops/action-gh-release@v2
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: false
           files: |
             /tmp/out/*/*
