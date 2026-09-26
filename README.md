@@ -1,15 +1,31 @@
 <p align="center"><img src="https://raw.githubusercontent.com/openweft/brand/main/social/openweft.png" alt="openweft" width="720"></p>
 
-# go-nbd
+# weft-nbd
 
-![Logo](./docs/logo-readme.png)
+**A working fork of [pojntfx/go-nbd](https://github.com/pojntfx/go-nbd)**, under
+upstream's Apache-2.0 licence. Most of the protocol code is upstream's; the
+parts below are not.
+
+⛔ The badges that used to sit here were UPSTREAM's — its CI, its pkg.go.dev
+entry, its Matrix room — under the title `# go-nbd`, which made this page read
+as if it were that project. It is not, and it has diverged.
+
+| | |
+|---|---|
+| upstream | [`pojntfx/go-nbd`](https://github.com/pojntfx/go-nbd) · Apache-2.0 · last released 2024-07 |
+| added here | `pkg/netclient` — an NBD client over a plain socket, 586 lines with 1 209 lines of tests |
+| added here | `pkg/ioctl/*_go_arm64.go` — the ioctl numbers for arm64, which upstream does not carry |
+| added here | negotiation options upstream omits: `EXPORT_NAME`, `STARTTLS` |
+| changed here | `pkg/server/nbd.go` (63 lines), and smaller edits in the client, the protocol and the file backend |
+| unchanged | everything else, byte for byte |
+| why arm64 | `openweft/weft-block` targets `linux/arm64`, and imports `pkg/client` and `pkg/server` from here |
+| ⚠ `netclient` | no repository in the fleet imports it. It is 1 795 lines with tests and no caller — worth knowing before treating it as load-bearing |
+
+Fixes to the SHARED parts belong upstream. What is listed above does not exist
+there, which is why this fork does.
 
 Pure Go NBD server and client library.
 
-[![hydrun CI](https://github.com/pojntfx/go-nbd/actions/workflows/hydrun.yaml/badge.svg)](https://github.com/pojntfx/go-nbd/actions/workflows/hydrun.yaml)
-![Go Version](https://img.shields.io/badge/go%20version-%3E=1.20-61CFDD.svg)
-[![Go Reference](https://pkg.go.dev/badge/github.com/pojntfx/go-nbd.svg)](https://pkg.go.dev/github.com/pojntfx/go-nbd)
-[![Matrix](https://img.shields.io/matrix/go-nbd:matrix.org)](https://matrix.to/#/#go-nbd:matrix.org?via=matrix.org)
 
 ## Overview
 
