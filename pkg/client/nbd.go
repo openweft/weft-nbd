@@ -13,10 +13,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pilebones/go-udev/netlink"
 	"github.com/openweft/weft-nbd/pkg/ioctl"
 	"github.com/openweft/weft-nbd/pkg/protocol"
 	"github.com/openweft/weft-nbd/pkg/server"
+	"github.com/pilebones/go-udev/netlink"
 )
 
 const (
